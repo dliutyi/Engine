@@ -1,4 +1,7 @@
 #include <Windows.h>
+#include <memory>
+
+#include "Core\Blank.h"
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -17,9 +20,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 	wndClass.lpszMenuName = nullptr;
 	wndClass.lpszClassName = "EditorWindowClass";
 
+	const int errorCode = -1;
 	if (!RegisterClassEx(&wndClass))
 	{
-		return -1;
+		return errorCode;
 	}
 
 	RECT rc = { 0, 0, 640, 480 };
@@ -29,10 +33,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 
 	if (!hwnd)
 	{
-		return -1;
+		return errorCode;
 	}
 
 	ShowWindow(hwnd, cmdShow);
+
+	std::unique_ptr<CDX11Base> demo(new CBlank());
+
+	bool result = demo->Initialize(hInstance, hwnd);
+
+	if (!result)
+	{	
+		return errorCode;
+	}
 
 	MSG msg = { 0 };
 	while (msg.message != WM_QUIT)
@@ -42,7 +55,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
+		else
+		{
+			demo->Update(0.0f);
+			demo->Render();
+		}
 	}
+
+	demo->Shutdown();
 
 	return static_cast<int>(msg.wParam);
 }
